@@ -57,23 +57,23 @@ public enum ServerStatus: Int, CustomStringConvertible, Error {
     public var description: String {
         switch self {
         case .success:
-            return "Everything worked as expected"
+            return Constants.ErrorMessage.successMessage
         case .badRequest:
-            return "The request was unacceptable, often due to missing a required parameter."
+            return Constants.ErrorMessage.badRequestMessage
         case .unauthorized:
-            return "Invalid Access Token"
+            return Constants.ErrorMessage.invalidTokenMessage
         case .forbidden:
-            return "Missing permissions to perform request"
+            return Constants.ErrorMessage.forbiddenMessage
         case .notFound:
-            return "The requested resource doesn’t exist"
+            return Constants.ErrorMessage.notFoundMessage
         case .internalServerError:
-            return "Server Not Found"
+            return Constants.ErrorMessage.internalServerError
         case .serviceUnavailable:
-            return "Something went wrong on our end"
+            return Constants.ErrorMessage.serviceUnavailableMessage
         case .canNotParse:
-            return "Response can not parse"
+            return Constants.ErrorMessage.jsonNotParseMessage
         case .unExpectedValue:
-            return "Unexpected value come from the API"
+            return Constants.ErrorMessage.unExpectedValueMessage
         }
     }
 }
