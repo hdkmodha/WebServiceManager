@@ -92,8 +92,17 @@ class WebServiceManager {
         }
         
         let parameter = resource.httpMethod.parameter
-        let header = HTTPHeaders(resource.header ?? [:])
+        let headers = HTTPHeaders(resource.header ?? [:])
         let method = resource.httpMethod.method
+        
+        print("------------ API Details ---------------")
+        print("API URL: \(url)")
+        print("API Method: \(method)")
+        print("API Parameter: \(String(describing: parameter))")
+        print("API Headers: \(String(describing: headers))")
+        
+        
+        
         let prepareFormData: (MultipartFormData)->Void = { (multipartFormData) in
             guard let parameters = parameter else { return }
             
@@ -135,7 +144,7 @@ class WebServiceManager {
             }
         }
         
-        self.session.upload(multipartFormData: prepareFormData, to: url, method: method, headers: header)
+        self.session.upload(multipartFormData: prepareFormData, to: url, method: method, headers: headers)
             .uploadProgress(closure: { (progress) in
                 progressCompletion?(progress.fractionCompleted)
             })
