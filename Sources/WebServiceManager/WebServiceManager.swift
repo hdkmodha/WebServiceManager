@@ -97,7 +97,7 @@ class WebServiceManager {
         
         print("------------ API Details ---------------")
         print("API URL: \(url)")
-        print("API Method: \(method)")
+        print("API Method: \(resource.httpMethod.description)")
         print("API Parameter: \(String(describing: parameter))")
         print("API Headers: \(String(describing: headers))")
         

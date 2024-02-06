@@ -13,7 +13,7 @@ public typealias Header = [String: String]
 public typealias Progress = (Double) -> Void
 
 
-public enum HTTPMethod {
+public enum HTTPMethod: CustomStringConvertible {
     case get
     case post(JSONType)
     case put(JSONType)
@@ -38,6 +38,19 @@ public enum HTTPMethod {
             return  .post
         case .put:
             return .put
+        }
+    }
+    
+    public var description: String {
+        switch self {
+        case .get:
+            return "GET"
+        case .post:
+            return "POST"
+        case .put:
+            return "PUT"
+        case .delete:
+            return "DELETE"
         }
     }
 }
