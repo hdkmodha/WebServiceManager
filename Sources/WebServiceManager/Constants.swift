@@ -7,9 +7,9 @@
 
 import Foundation
 
-struct Constants {
+enum Constants {
     
-    struct ErrorMessage {
+    enum ErrorMessage {
         static let successMessage = "Everything worked as expected"
         static let badRequestMessage = "The request was unacceptable, often due to missing a required parameter."
         static let invalidTokenMessage = "Invalid Access Token"
