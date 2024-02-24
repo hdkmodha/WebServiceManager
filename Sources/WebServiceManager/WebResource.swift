@@ -66,6 +66,10 @@ public enum ServerStatus: Int, CustomStringConvertible, Error {
     case canNotParse = 0
     case unExpectedValue = 1
     
+    public var errorCode: Int {
+        return self.rawValue
+    }
+    
     
     public var description: String {
         switch self {
