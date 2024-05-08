@@ -40,7 +40,6 @@ extension MediaType {
         case .doc:
             return "application/msword"
         }
-        
     }
 }
 
@@ -49,7 +48,7 @@ extension MediaType {
    static func generateMimeType(key: String, value: Any) -> (url: URL?, mimeType: String) {
         if let url = value as? URL {
             
-            guard let mediaType = MediaType(rawValue: url.pathExtension.lowercased()) else {
+            guard let mediaType = MediaType(rawValue: url.fileExtension.lowercased()) else {
                 return (nil, "")
             }
             
