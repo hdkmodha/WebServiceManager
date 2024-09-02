@@ -8,7 +8,7 @@
 import UIKit
 import Alamofire
 
-class WebServiceManager {
+final class WebServiceManager {
     
     static let shared = WebServiceManager()
     
@@ -41,7 +41,7 @@ class WebServiceManager {
         }
     }
     
-    func fetching<Value>(resource: WebResource<Value>, witnCompletion completion: @escaping (Result<Value, ServerStatus>) -> Void) -> RequestToken? {
+    private func fetching<Value>(resource: WebResource<Value>, witnCompletion completion: @escaping (Result<Value, ServerStatus>) -> Void) -> RequestToken? {
         
         guard let url = resource.url else {
             assertionFailure("Provide valid url")

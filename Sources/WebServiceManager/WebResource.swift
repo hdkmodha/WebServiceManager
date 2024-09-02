@@ -115,9 +115,9 @@ public struct WebResource<Value> {
         self.decode = decode
     }
     
-    @discardableResult
-    public func request(completion: @escaping (Result<Value, ServerStatus>) -> Void)  -> RequestToken? {
-        return WebServiceManager.shared.fetch(resource: self, witnCompletion: completion)
+    
+    public func request() async throws -> Value  {
+        return try await WebServiceManager.shared.fetch(resource: self)
     }
     
     func uploadRequest(progress: Progress?, completion: @escaping (Result<Value, ServerStatus>) -> Void)  {
