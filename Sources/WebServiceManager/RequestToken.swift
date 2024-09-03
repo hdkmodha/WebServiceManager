@@ -8,7 +8,7 @@
 import Foundation
 import Alamofire
 
-public class RequestToken {
+public struct RequestToken {
     let task: DataRequest
     
     init(task: DataRequest) {

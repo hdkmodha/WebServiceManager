@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol APIService {
+public protocol APIService: Sendable {
     var base: String { get }
     var scheme: String { get }
     var fixed: String { get }
@@ -18,7 +18,6 @@ public protocol APIService {
 }
 
 public extension APIService {
-    
     var url: URL? {
         var urlComponents = URLComponents()
         urlComponents.scheme = self.scheme

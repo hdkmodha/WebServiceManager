@@ -9,7 +9,6 @@ import UIKit
 import AlamofireImage
 
 public extension UIImageView {
-    
     func setImage(with string: String?, placeholderImage: UIImage?, completion: (() -> ())? = nil) {
         guard let validString = string, let url = URL(string: validString) else {
             self.image = placeholderImage

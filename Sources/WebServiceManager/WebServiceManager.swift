@@ -8,7 +8,7 @@
 import UIKit
 import Alamofire
 
-final class WebServiceManager {
+actor WebServiceManager {
     
     static let shared = WebServiceManager()
     
@@ -28,7 +28,7 @@ final class WebServiceManager {
     }()
     
     
-    func fetch<Value>(resource: WebResource<Value>) async throws -> Value {
+    func fetch<Value: Sendable>(resource: WebResource<Value>) async throws -> Value {
         return try await withCheckedThrowingContinuation { continuation in
             let _ = self.fetching(resource: resource) { result in
                 switch result {
@@ -68,7 +68,7 @@ final class WebServiceManager {
             }
         }
         
-        let dataTask  = self.session.request(url, method: method, parameters: parameter, encoding: URLEncoding.default, headers: headers, interceptor: nil).responseData { (response) in
+        let dataTask  = self.session.request(url, method: method, parameters: parameter?.toJSON, encoding: URLEncoding.default, headers: headers, interceptor: nil).responseData { (response) in
             
             self.processResponse(response: response, decode: resource.decode, completion: completion)
             
@@ -105,7 +105,7 @@ final class WebServiceManager {
     }
     
     
-    func postResource<Value>(_ resource: WebResource<Value>, progressCompletion: ((Double)->Void)?, completion: @escaping (Result<Value, ServerStatus>)->Void)  {
+    func postResource<Value>(_ resource: WebResource<Value>, progressCompletion: ((Double)->Void)?, completion: @escaping @Sendable (Result<Value, ServerStatus>)->Void)  {
         guard let url = resource.url else {
             completion(.failure(.unExpectedValue))
             return
@@ -124,7 +124,7 @@ final class WebServiceManager {
         
         
         let prepareFormData: (MultipartFormData)->Void = { (multipartFormData) in
-            guard let parameters = parameter else { return }
+            guard let parameters = parameter?.toJSON else { return }
             
             for (key, value) in parameters {
                 let (url, mimeType) = MediaType.generateMimeType(key: key, value: value)

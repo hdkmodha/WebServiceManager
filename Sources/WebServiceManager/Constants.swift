@@ -8,7 +8,6 @@
 import Foundation
 
 enum Constants {
-    
     enum ErrorMessage {
         static let successMessage = "Everything worked as expected"
         static let badRequestMessage = "The request was unacceptable, often due to missing a required parameter."

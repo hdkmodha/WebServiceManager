@@ -22,7 +22,7 @@ public extension URL {
     }
 }
 
-enum MediaType: String {
+public enum MediaType: String {
     case jpg
     case png
     case doc
@@ -30,8 +30,7 @@ enum MediaType: String {
 }
 
 extension MediaType {
-    
-    var mimeType: String {
+    public var mimeType: String {
         switch self {
         case .png:
             return "image/png"
@@ -44,16 +43,12 @@ extension MediaType {
 }
 
 extension MediaType {
-    
-   static func generateMimeType(key: String, value: Any) -> (url: URL?, mimeType: String) {
+   public static func generateMimeType(key: String, value: Any) -> (url: URL?, mimeType: String) {
         if let url = value as? URL {
-            
             guard let mediaType = MediaType(rawValue: url.fileExtension.lowercased()) else {
                 return (nil, "")
             }
-            
             return (value as? URL, mediaType.mimeType)
-            
         }
         return (nil, "")
     }
