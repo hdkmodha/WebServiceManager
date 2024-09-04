@@ -31,17 +31,17 @@ public extension Encodable {
             try Coders.jsonEncoder.encode(self)
         }
     }
-}
-
-
-extension Encodable {
+    
     var toJSON: [String: Any] {
         do {
             let data = try self.jsonData
-            let dictioanry = try JSONSerialization.jsonObject(with: data)
+            let dictioanry = try JSONSerialization.jsonObject(with: data, options: .mutableContainers)
             return dictioanry as? [String : Any] ?? [:]
         } catch {
             return [:]
         }
     }
 }
+
+
+

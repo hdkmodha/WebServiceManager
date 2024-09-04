@@ -59,7 +59,9 @@ actor WebServiceManager {
         print("------------ API Details ---------------")
         print("API URL: \(url)")
         print("API Method: \(resource.httpMethod.description)")
-        print("API Parameter: \(String(describing: parameter))")
+        if let parameter = resource.httpMethod.parameter?.toJSON {
+            print("Parameters: \(parameter)")
+        }
         print("API Headers: \(String(describing: headers))")
         if let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false),
             let queryItems = urlComponents.queryItems {
