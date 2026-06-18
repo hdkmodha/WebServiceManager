@@ -6,11 +6,13 @@
 //
 
 import Foundation
-import Alamofire
+
 
 public typealias JSONType = (any Encodable & Sendable)
-public typealias Header = [String: String]
+public typealias HTTPHeaders = [String: String]
 public typealias Progress = @Sendable (Double) -> Void
+
+public typealias ResponseCodable = Codable & Sendable
 
 public enum HTTPMethod: CustomStringConvertible, Sendable {
     case get
@@ -24,19 +26,6 @@ public enum HTTPMethod: CustomStringConvertible, Sendable {
             return nil
         case .post(let parameter), .put(let parameter):
             return parameter
-        }
-    }
-    
-    public var method: Alamofire.HTTPMethod {
-        switch self {
-        case .get:
-            return .get
-        case .delete:
-            return .delete
-        case .post:
-            return  .post
-        case .put:
-            return .put
         }
     }
     
@@ -62,8 +51,6 @@ public enum ServerStatus: Int, CustomStringConvertible, Error, Sendable {
     case notFound = 404
     case internalServerError = 500
     case serviceUnavailable = 503
-    case canNotParse = 0
-    case unExpectedValue = 1
     
     public var errorCode: Int {
         return self.rawValue
@@ -85,38 +72,52 @@ public enum ServerStatus: Int, CustomStringConvertible, Error, Sendable {
             return Constants.ErrorMessage.internalServerError
         case .serviceUnavailable:
             return Constants.ErrorMessage.serviceUnavailableMessage
-        case .canNotParse:
-            return Constants.ErrorMessage.jsonNotParseMessage
+        }
+    }
+}
+
+enum AppError: Error, CustomStringConvertible {
+    case invalidURL(String)
+    case invalidResponse
+    case canNotParse(String)
+    case unExpectedValue
+    
+    var description: String {
+        switch self {
+        case .invalidURL(let string):
+            return string
+        case .invalidResponse:
+            return "invalid response"
+        case .canNotParse(let error):
+            return error
         case .unExpectedValue:
             return Constants.ErrorMessage.unExpectedValueMessage
         }
     }
 }
 
-public struct WebResource<Value: Sendable>: Sendable {
+public struct WebResource<Value: ResponseCodable>: Sendable {
     
     let path: APIService
     var httpMethod: HTTPMethod = .get
-    var header: Header?
-    var decode: @Sendable (Data) -> Result<Value, ServerStatus>
+    var header: HTTPHeaders?
     
     var url: URL? {
         return self.path.url
     }
     
-    public init(path: APIService, httpMethod: HTTPMethod, header: Header? = nil, decode: @escaping @Sendable (Data) -> Result<Value, ServerStatus>) {
+    public init(path: APIService, httpMethod: HTTPMethod, header: HTTPHeaders? = nil) {
         self.path = path
         self.httpMethod = httpMethod
         self.header = header
-        self.decode = decode
     }
     
-    public func request() async throws -> Value  {
+    public func request() async throws -> Result<Value, Error>  {
         return try await WebServiceManager.shared.fetch(resource: self)
     }
     
-    func uploadRequest(progress: Progress?, completion: @escaping @Sendable (Result<Value, ServerStatus>) -> Void) async  {
-        await WebServiceManager.shared.postResource(self, progressCompletion: progress, completion: completion)
-    }
+//    func uploadRequest(progress: Progress?, completion: @escaping @Sendable (Result<Value, ServerStatus>) -> Void) async  {
+//        await WebServiceManager.shared.postResource(self, progressCompletion: progress, completion: completion)
+//    }
     
 }

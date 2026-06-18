@@ -12,30 +12,21 @@ enum Coders {
     static let jsonEncoder = JSONEncoder()
 }
 
-public extension Decodable {
-    static func decode<A: Codable>(_ data: Data) -> Result<A, ServerStatus> {
-        do {
-            let decoder = Coders.jsonDecoder
-            let result = try decoder.decode(A.self, from: data)
-            return .success(result)
-        } catch  {
-            print(error.localizedDescription)
-            return .failure(.unExpectedValue)
-        }
-    }
-}
-
 public extension Encodable {
-    var jsonData: Data {
-        get throws {
-            try Coders.jsonEncoder.encode(self)
+    var toData: Data? {
+        do {
+            let data = try Coders.jsonEncoder.encode(self)
+            return data
+        } catch {
+            print(error.localizedDescription)
+            return nil
         }
     }
     
     var toJSON: [String: Any] {
         do {
-            let data = try self.jsonData
-            let dictioanry = try JSONSerialization.jsonObject(with: data, options: .mutableContainers)
+            let data =  self.toData
+            let dictioanry = try JSONSerialization.jsonObject(with: data!, options: .mutableContainers)
             return dictioanry as? [String : Any] ?? [:]
         } catch {
             return [:]

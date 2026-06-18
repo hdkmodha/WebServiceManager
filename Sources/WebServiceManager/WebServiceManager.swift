@@ -6,7 +6,6 @@
 //
 
 import UIKit
-import Alamofire
 
 actor WebServiceManager {
     
@@ -14,170 +13,80 @@ actor WebServiceManager {
     
     private init() {}
     
-    static var isReachable: Bool {
-        return NetworkReachabilityManager()?.isReachable ?? false
-    }
-    
-    lazy var session: Session = {
-        let configure = URLSessionConfiguration.ephemeral
-        configure.httpCookieStorage = nil
-        configure.httpCookieAcceptPolicy = .never
-        configure.httpShouldSetCookies = false
-        let session = Session(configuration: configure)
-        return session
-    }()
-    
-    
-    func fetch<Value: Sendable>(resource: WebResource<Value>) async throws -> Value {
-        return try await withCheckedThrowingContinuation { continuation in
-            let _ = self.fetching(resource: resource) { result in
-                switch result {
-                case .success(let value):
-                    continuation.resume(returning: value)
-                case .failure(let serverStatus):
-                    continuation.resume(throwing: serverStatus)
-                }
-            }
-        }
-    }
-    
-    private func fetching<Value>(resource: WebResource<Value>, witnCompletion completion: @escaping (Result<Value, ServerStatus>) -> Void) -> RequestToken? {
+    func fetch<Value: Codable>(resource: WebResource<Value>) async throws -> Result<Value, Error> {
         
         guard let url = resource.url else {
             assertionFailure("Provide valid url")
-            return nil
+            return .failure(AppError.invalidURL(resource.url?.absoluteString ?? ""))
         }
         
-        var headers: HTTPHeaders?
-        let parameter = resource.httpMethod.parameter
-        let method = resource.httpMethod.method
+        var request = URLRequest(url: url)
+        request.httpMethod = resource.httpMethod.description
+        
+        if let parameters = resource.httpMethod.parameter {
+            request.httpBody = parameters.toData
+        }
         
         if let header = resource.header {
-            headers = HTTPHeaders(header)
+            request.allHTTPHeaderFields = header
         }
         
-        print("------------ API Details ---------------")
-        print("API URL: \(url)")
-        print("API Method: \(resource.httpMethod.description)")
-        if let parameter = resource.httpMethod.parameter?.toJSON {
-            print("Parameters: \(parameter)")
-        }
-        print("API Headers: \(String(describing: headers))")
-        if let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false),
-            let queryItems = urlComponents.queryItems {
-            for value in queryItems.enumerated() {
-                print("Parameter Key: \(value.element.name) and Paramenter Value: \(String(describing: value.element.value))")
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                return .failure(AppError.invalidResponse)
             }
-        }
-        
-        let dataTask  = self.session.request(url, method: method, parameters: parameter?.toJSON, encoding: URLEncoding.default, headers: headers, interceptor: nil).responseData { (response) in
+            print("Response: \(httpResponse)")
             
-            self.processResponse(response: response, decode: resource.decode, completion: completion)
+            guard (200...299).contains(httpResponse.statusCode) else {
+                return .failure(ServerStatus(rawValue: httpResponse.statusCode) ?? .internalServerError)
+            }
             
+            do {
+                let result = try Coders.jsonDecoder.decode(Value.self, from: data)
+                return .success(result)
+            } catch let error as DecodingError {
+                print(decodingError(error: error))
+                return .failure(AppError.canNotParse(decodingError(error: error)))
+            }
+            
+        } catch {
+            print("Request Error: \(error.localizedDescription)")
+            return .failure(ServerStatus.badRequest)
         }
-        
-        return RequestToken(task: dataTask)
         
     }
     
-    private func processResponse<Value>(response: AFDataResponse<Data>, decode: (Data) -> Result<Value, ServerStatus>, completion: @escaping (Result<Value, ServerStatus>) -> Void) {
-        
-        
-        guard let httpResponse = response.response else {
-            completion(.failure(.internalServerError))
-            return
+    private func decodingError(error: DecodingError) -> String {
+        switch error {
+        case .typeMismatch(let type, let context):
+            """
+            Decoding Error: Type mismatch for type \(type)
+            Context: \(context.debugDescription)
+            Coding path: \(context.codingPath.map { $0.stringValue}.joined(separator: " -> "))
+            """
+        case .valueNotFound(let type, let context):
+            """
+            Decoding Error: Value of type \(type) not found
+            Context: \(context.debugDescription)
+            Coding path: \(context.codingPath.map { $0.stringValue}.joined(separator: " -> "))
+            """
+        case .keyNotFound(let codingKey, let context):
+            """
+            Decoding Error: Key '\(codingKey.stringValue)' not found
+            Context: \(context.debugDescription)
+            Coding path: \(context.codingPath.map { $0.stringValue}.joined(separator: " -> "))
+            """
+        case .dataCorrupted(let context):
+            """
+            Decoding Error: Data corrupted
+            Context: \(context.debugDescription)
+                Coding path: \(context.codingPath.map { $0.stringValue}.joined(separator: " -> "))
+            """
+        @unknown default:
+            """
+            Unknown error: \(error.localizedDescription)
+            """
         }
-        
-        if let serverStatus = ServerStatus(rawValue: httpResponse.statusCode) {
-            switch serverStatus {
-            case .success:
-                switch response.result {
-                case .success(let data):
-                    completion(decode(data))
-                case .failure:
-                    completion(.failure(.forbidden))
-                }
-            default:
-                completion(.failure(serverStatus))
-            }
-            
-        }
-        
-        
-    }
-    
-    
-    func postResource<Value>(_ resource: WebResource<Value>, progressCompletion: ((Double)->Void)?, completion: @escaping @Sendable (Result<Value, ServerStatus>)->Void)  {
-        guard let url = resource.url else {
-            completion(.failure(.unExpectedValue))
-            return
-        }
-        
-        let parameter = resource.httpMethod.parameter
-        let headers = HTTPHeaders(resource.header ?? [:])
-        let method = resource.httpMethod.method
-        
-        print("------------ API Details ---------------")
-        print("API URL: \(url)")
-        print("API Method: \(resource.httpMethod.description)")
-        print("API Parameter: \(String(describing: parameter))")
-        print("API Headers: \(String(describing: headers))")
-        
-        
-        
-        let prepareFormData: (MultipartFormData)->Void = { (multipartFormData) in
-            guard let parameters = parameter?.toJSON else { return }
-            
-            for (key, value) in parameters {
-                let (url, mimeType) = MediaType.generateMimeType(key: key, value: value)
-                if let url = url {
-                    multipartFormData.append(url, withName: key, fileName: url.fileNameWithExtension, mimeType: mimeType)
-                }
-                else if
-                    let stringValue = value as? String,
-                    let data = stringValue.data(using: String.Encoding.utf8) {
-                    multipartFormData.append(data, withName: key)//, mimeType: "text/plain")
-                }
-                else if
-                    let bool = value as? Bool,
-                    let data = String(bool).data(using: String.Encoding.utf8) {
-                    multipartFormData.append(data, withName: key)//, mimeType: "text/plain")
-                }
-                else if let int = value as? NSNumber {
-                    let data = int.stringValue.data(using: String.Encoding.utf8)
-                    multipartFormData.append(data!, withName: key)//, mimeType: "text/plain")
-                } else if let data = value as? [URL] {
-                    for value in data {
-                        let (url, mimeType) = MediaType.generateMimeType(key: key, value: value)
-                        if let url = url {
-                            multipartFormData.append(url, withName: key, fileName: url.fileNameWithExtension, mimeType: mimeType)
-                        }
-                    }
-                } else if let data = value as? [UIImage] {
-                    for image in data {
-                        let imagData = image.jpegData(compressionQuality: 0.5)!
-                        let name = "image\(Date().timeIntervalSince1970).jpg"
-                        
-                        multipartFormData.append(imagData, withName: key, fileName: name, mimeType: "image/jpg")
-                    }
-                } else {
-                    print("Unable to add form data for key: '\(key)'.")
-                }
-            }
-        }
-        
-        self.session.upload(multipartFormData: prepareFormData, to: url, method: method, headers: headers)
-            .uploadProgress(closure: { (progress) in
-                progressCompletion?(progress.fractionCompleted)
-            })
-        
-            .downloadProgress(closure: { (progress) in
-                progressCompletion?(progress.fractionCompleted)
-            })
-        
-            .responseData(completionHandler: { (response) in
-                self.processResponse(response: response, decode: resource.decode, completion: completion)
-            })
-        
     }
 }
