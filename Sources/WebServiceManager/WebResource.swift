@@ -114,8 +114,8 @@ public struct WebResource<Value: Codable> {
         self.header = header
     }
     
-    public func request() async throws -> Result<Value, Error>  {
-        return try await WebServiceManager.shared.fetch(resource: self)
+    public func request() async -> Result<Value, Error>  {
+        return await WebServiceManager.shared.fetch(resource: self)
     }
     
 //    func uploadRequest(progress: Progress?, completion: @escaping @Sendable (Result<Value, ServerStatus>) -> Void) async  {
