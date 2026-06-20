@@ -7,7 +7,7 @@
 
 import UIKit
 
-actor WebServiceManager {
+final class WebServiceManager: Sendable {
     
     static let shared = WebServiceManager()
     
