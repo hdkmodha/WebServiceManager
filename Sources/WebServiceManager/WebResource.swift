@@ -76,7 +76,7 @@ public enum ServerStatus: Int, CustomStringConvertible, Error, Sendable {
     }
 }
 
-enum AppError: Error, CustomStringConvertible {
+enum NetworkError: Error, CustomStringConvertible {
     case invalidURL(String)
     case invalidResponse
     case canNotParse(String)
@@ -99,14 +99,16 @@ enum AppError: Error, CustomStringConvertible {
 public struct WebResource<Value: ResponseCodable>: Sendable {
     
     let path: APIService
-    var httpMethod: HTTPMethod = .get
+    var httpMethod: HTTPMethod
     var header: HTTPHeaders?
     
-    var url: URL? {
-        return self.path.url
-    }
+    var url: URL? { return self.path.url }
     
-    public init(path: APIService, httpMethod: HTTPMethod, header: HTTPHeaders? = nil) {
+    public init(
+        path: APIService,
+        httpMethod: HTTPMethod = .get,
+        header: HTTPHeaders? = nil
+    ) {
         self.path = path
         self.httpMethod = httpMethod
         self.header = header

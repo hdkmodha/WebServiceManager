@@ -13,11 +13,11 @@ actor WebServiceManager {
     
     private init() {}
     
-    func fetch<Value: Codable>(resource: WebResource<Value>) async throws -> Result<Value, Error> {
+    func fetch<Value: Codable>(resource: WebResource<Value>, configureDecoder: ((JSONDecoder) -> Void)? = nil) async throws -> Result<Value, Error> {
         
         guard let url = resource.url else {
             assertionFailure("Provide valid url")
-            return .failure(AppError.invalidURL(resource.url?.absoluteString ?? ""))
+            return .failure(NetworkError.invalidURL(resource.url?.absoluteString ?? ""))
         }
         
         var request = URLRequest(url: url)
@@ -34,7 +34,7 @@ actor WebServiceManager {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                return .failure(AppError.invalidResponse)
+                return .failure(NetworkError.invalidResponse)
             }
             print("Response: \(httpResponse)")
             
@@ -43,13 +43,14 @@ actor WebServiceManager {
             }
             
             do {
-                let result = try Coders.jsonDecoder.decode(Value.self, from: data)
+                let decoder = Coders.jsonDecoder
+                configureDecoder?(decoder)
+                let result = try decoder.decode(Value.self, from: data)
                 return .success(result)
             } catch let error as DecodingError {
                 print(decodingError(error: error))
-                return .failure(AppError.canNotParse(decodingError(error: error)))
+                return .failure(NetworkError.canNotParse(decodingError(error: error)))
             }
-            
         } catch {
             print("Request Error: \(error.localizedDescription)")
             return .failure(ServerStatus.badRequest)
