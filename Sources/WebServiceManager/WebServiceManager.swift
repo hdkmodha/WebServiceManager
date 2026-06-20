@@ -13,7 +13,7 @@ final class WebServiceManager: Sendable {
     
     private init() {}
     
-    func fetch<Value: Codable>(resource: WebResource<Value>, configureDecoder: ((JSONDecoder) -> Void)? = nil) async throws -> Result<Value, Error> {
+    func fetch<Value: Codable>(resource: WebResource<Value>, configureDecoder: ((JSONDecoder) -> Void)? = nil) async -> Result<Value, Error> {
         
         guard let url = resource.url else {
             assertionFailure("Provide valid url")
