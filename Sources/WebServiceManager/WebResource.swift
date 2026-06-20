@@ -96,7 +96,7 @@ enum NetworkError: Error, CustomStringConvertible {
     }
 }
 
-public struct WebResource<Value: ResponseCodable>: Sendable {
+public struct WebResource<Value: Codable> {
     
     let path: APIService
     var httpMethod: HTTPMethod
